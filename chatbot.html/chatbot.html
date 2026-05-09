@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sam - Asistente</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Título */
+    .titulo {
+      color: #d4eb08;
+      font-size: 2rem;
+      margin-bottom: 15px;
+      text-shadow: 0 0 15px #d4eb08;
+      animation: brillar 2s ease-in-out infinite;
+    }
+
+    @keyframes brillar {
+      0%, 100% { text-shadow: 0 0 10px #d4eb08; }
+      50%       { text-shadow: 0 0 30px #d4eb08, 0 0 50px #aaff00; }
+    }
+
+    /* Contenedor del chat */
+    .chat-box {
+      width: 420px;
+      max-width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    /* Cabecera del chat */
+    .chat-header {
+      background: linear-gradient(135deg, #1a6b3a, #2ecc71);
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 45px;
+      height: 45px;
+      background: #d4eb08;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      animation: rotar 4s linear infinite;
+    }
+
+    @keyframes rotar {
+      0%   { transform: rotate(0deg) scale(1); }
+      50%  { transform: rotate(10deg) scale(1.1); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+
+    .chat-header-info h2 {
+      color: white;
+      font-size: 1.1rem;
+    }
+
+    .estado {
+      color: #a8ffb0;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .punto-verde {
+      width: 8px;
+      height: 8px;
+      background: #00ff88;
+      border-radius: 50%;
+      animation: parpadeo 1.5s ease-in-out infinite;
+    }
+
+    @keyframes parpadeo {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    /* Área de mensajes */
+    #chat {
+      height: 320px;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: smooth;
+    }
+
+    #chat::-webkit-scrollbar {
+      width: 5px;
+    }
+    #chat::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+    }
+
+    /* Burbujas de mensajes */
+    .burbuja {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      animation: aparecer 0.3s ease;
+      word-break: break-word;
+    }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .burbuja.usuario {
+      background: linear-gradient(135deg, #2a6496, #3498db);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .burbuja.bot {
+      background: rgba(255,255,255,0.12);
+      color: #e0ffe0;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .nombre-burbuja {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      margin-bottom: 3px;
+    }
+
+    /* Indicador "escribiendo..." */
+    .escribiendo {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+      animation: aparecer 0.3s ease;
+    }
+
+    .escribiendo span {
+      width: 8px;
+      height: 8px;
+      background: #2ecc71;
+      border-radius: 50%;
+      animation: bote 1s ease-in-out infinite;
+    }
+
+    .escribiendo span:nth-child(2) { animation-delay: 0.15s; }
+    .escribiendo span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes bote {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-6px); }
+    }
+
+    /* Sugerencias rápidas */
+    .sugerencias {
+      padding: 10px 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sugerencia {
+      background: rgba(46, 204, 113, 0.15);
+      border: 1px solid rgba(46, 204, 113, 0.4);
+      color: #a8ffb0;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .sugerencia:hover {
+      background: rgba(46, 204, 113, 0.35);
+      transform: scale(1.05);
+    }
+
+    /* Input y botón */
+    .chat-input {
+      display: flex;
+      padding: 12px 15px;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.2);
+    }
+
+    .chat-input input {
+      flex: 1;
+      height: 42px;
+      border-radius: 25px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      padding: 0 16px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .chat-input input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+
+    .chat-input input:focus {
+      border-color: #2ecc71;
+    }
+
+    .chat-input button {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a6b3a, #2ecc71);
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-input button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
+    }
+
+    /* Botón limpiar */
+    .btn-limpiar {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.5);
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-limpiar:hover {
+      border-color: #e74c3c;
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="titulo">🤖 Sam</div>
+
+  <div class="chat-box">
+
+    <!-- Cabecera -->
+    <div class="chat-header">
+      <div class="avatar">🤖</div>
+      <div class="chat-header-info">
+        <h2>Sam</h2>
+        <div class="estado">
+          <div class="punto-verde"></div>
+          En línea
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div id="chat"></div>
+
+    <!-- Sugerencias rápidas -->
+    <div class="sugerencias">
+      <div class="sugerencia" onclick="usarSugerencia('Hola')">👋 Hola</div>
+      <div class="sugerencia" onclick="usarSugerencia('Mi computador tiene virus')">🦠 Virus</div>
+      <div class="sugerencia" onclick="usarSugerencia('Mi computador esta lento')">🐢 Lento</div>
+      <div class="sugerencia" onclick="usarSugerencia('Mi pantalla se daño')">🖥️ Pantalla</div>
+      <div class="sugerencia" onclick="usarSugerencia('Cuanto cuesta')">💰 Precios</div>
+      <div class="sugerencia" onclick="usarSugerencia('Esta dañada la bateria')">🔋 Batería</div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input">
+      <input type="text" id="entrada" placeholder="Escríbeme algo..." />
+      <button onclick="enviarmensaje()">➤</button>
+    </div>
+
+  </div>
+
+  <button class="btn-limpiar" onclick="limpiarChat()">🗑️ Limpiar chat</button>
+
+  <script>
+    // Mensaje de bienvenida al cargar
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        agregarMensajeBot("¡Hola! 👋 Soy Sam, tu asistente de mantenimiento. ¿En qué te puedo ayudar hoy?");
+      }, 500);
+    });
+
+    function responderBot(mensaje) {
+      mensaje = mensaje.toLowerCase();
+
+      if (mensaje.includes("hola") || mensaje.includes("buenas") || mensaje.includes("hey"))
+        return "¡Hola! 😊 ¿En qué te puedo ayudar?";
+      if (mensaje.includes("virus") || mensaje.includes("malware"))
+        return "La limpieza de virus cuesta $60,000 💻 ¿Quieres agendar una cita?";
+      if (mensaje.includes("lento") || mensaje.includes("tarda"))
+        return "Si tu equipo está lento podemos optimizarlo por $40,000 ⚡";
+      if (mensaje.includes("pantalla") || mensaje.includes("monitor"))
+        return "Reparar una pantalla cuesta entre $80,000 y $200,000 según la marca 🖥️";
+      if (mensaje.includes("teclado"))
+        return "Reemplazar un teclado vale entre $30,000 y $80,000 ⌨️";
+      if (mensaje.includes("bateria") || mensaje.includes("batería"))
+        return "Una batería nueva cuesta entre $60,000 y $150,000 según la marca 🔋";
+      if (mensaje.includes("ram") && mensaje.includes("ddr4"))
+        return "La RAM DDR4 está entre $100,000 y $450,000 según la capacidad 💾";
+      if (mensaje.includes("ram"))
+        return "¿Qué tipo de RAM buscas? DDR3, DDR4 o DDR5 💾";
+      if (mensaje.includes("limpiar") || mensaje.includes("limpieza"))
+        return "La limpieza física del equipo cuesta $60,000 🧹";
+      if (mensaje.includes("precio") || mensaje.includes("cuesta") || mensaje.includes("vale") || mensaje.includes("costo"))
+        return "Los precios varían según el daño. Puedo darte un presupuesto exacto si me describes el problema 💰";
+      if (mensaje.includes("gracias") || mensaje.includes("ok") || mensaje.includes("listo"))
+        return "¡Con gusto! 😊 Si necesitas algo más, aquí estoy.";
+      if (mensaje.includes("adios") || mensaje.includes("adiós") || mensaje.includes("chao"))
+        return "¡Hasta luego! 👋 Que tengas un buen día.";
+      if (mensaje.includes("disco") || mensaje.includes("ssd") || mensaje.includes("hdd"))
+        return "El cambio de disco duro o SSD cuesta entre $50,000 y $120,000 más el precio del disco 💿";
+      if (mensaje.includes("no enciende") || mensaje.includes("no prende"))
+        return "Si tu equipo no enciende puede ser la batería, el cargador o la tarjeta madre. Tráelo para revisarlo sin costo 🔍";
+      if (mensaje.includes("cargador") || mensaje.includes("cable"))
+        return "Un cargador nuevo cuesta entre $40,000 y $100,000 según la marca 🔌";
+
+      return "Disculpa, no entendí bien 🤔 ¿Puedes describir mejor el problema? También puedes usar los botones de arriba.";
+    }
+
+    function agregarMensajeBot(texto) {
+      const chat = document.getElementById("chat");
+
+      // Mostrar "escribiendo..."
+      const escribiendo = document.createElement("div");
+      escribiendo.classList.add("escribiendo");
+      escribiendo.id = "escribiendo";
+      escribiendo.innerHTML = "<span></span><span></span><span></span>";
+      chat.appendChild(escribiendo);
+      chat.scrollTop = chat.scrollHeight;
+
+      setTimeout(() => {
+        escribiendo.remove();
+        const burbuja = document.createElement("div");
+        burbuja.classList.add("burbuja", "bot");
+        burbuja.innerHTML = `<div class="nombre-burbuja">Sam</div>${texto}`;
+        chat.appendChild(burbuja);
+        chat.scrollTop = chat.scrollHeight;
+      }, 900);
+    }
+
+    function enviarmensaje() {
+      const entrada = document.getElementById("entrada");
+      const chat = document.getElementById("chat");
+      const texto = entrada.value.trim();
+
+      if (texto === "") return;
+
+      // Burbuja del usuario
+      const burbujaUsuario = document.createElement("div");
+      burbujaUsuario.classList.add("burbuja", "usuario");
+      burbujaUsuario.innerHTML = `<div class="nombre-burbuja">Tú</div>${texto}`;
+      chat.appendChild(burbujaUsuario);
+      chat.scrollTop = chat.scrollHeight;
+
+      entrada.value = "";
+
+      // Respuesta del bot con delay
+      const respuesta = responderBot(texto);
+      agregarMensajeBot(respuesta);
+    }
+
+    function usarSugerencia(texto) {
+      document.getElementById("entrada").value = texto;
+      enviarmensaje();
+    }
+
+    function limpiarChat() {
+      document.getElementById("chat").innerHTML = "";
+      setTimeout(() => {
+        agregarMensajeBot("Chat limpiado 🧹 ¿En qué más te puedo ayudar?");
+      }, 300);
+    }
+
+    document.getElementById("entrada").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") enviarmensaje();
+    });
+  </script>
+
+</body>
+</html>
